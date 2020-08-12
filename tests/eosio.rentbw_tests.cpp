@@ -98,13 +98,28 @@ struct rentbw_tester : eosio_system_tester
                          << "before_receiver.net"
                          << "after_receiver.net"
                          << "after_receiver.net-before_receiver.net"
-                         << "expected_net"
                          << "before_payer.liquid-after_payer.liquid"
-                         << "expected_fee"
                          << "before_reserve.net"
                          << "after_reserve.net"
                          << "before_reserve.cpu"
-                         << "after_reserve.cpu";
+                         << "after_reserve.cpu"
+
+                         << "weight"
+                         << "weight_ratio"
+                         << "assumed_stake_weight"
+                         << "initial_weight_ratio"
+                         << "target_weight_ratio"
+                         << "initial_timestamp"
+                         << "target_timestamp"
+                         << "exponent"
+                         << "decay_secs"
+                         << "min_price"
+                         << "max_price"
+                         << "utilization"
+                         << "adjusted_utilization"
+                         << "utilization_timestamp";
+ 
+
          header.writeToFile(CSV_FILENAME);
       }
    }
@@ -276,13 +291,26 @@ struct rentbw_tester : eosio_system_tester
                       << before_receiver.net
                       << after_receiver.net
                       << after_receiver.net - before_receiver.net
-                      << expected_net
                       << before_payer.liquid - after_payer.liquid
-                      << expected_fee
                       << before_reserve.net
                       << after_reserve.net
                       << before_reserve.cpu
-                      << after_reserve.cpu;
+                      << after_reserve.cpu
+
+                      << get_state().cpu.weight
+                      << get_state().cpu.weight_ratio
+                      << get_state().cpu.assumed_stake_weight
+                      << get_state().cpu.initial_weight_ratio
+                      << get_state().cpu.target_weight_ratio
+                      << get_state().cpu.initial_timestamp.sec_since_epoch ()
+                      << get_state().cpu.target_timestamp.sec_since_epoch ()
+                      << get_state().cpu.exponent
+                      << get_state().cpu.decay_secs
+                      << get_state().cpu.min_price.to_string()
+                      << get_state().cpu.max_price.to_string()
+                      << get_state().cpu.utilization
+                      << get_state().cpu.adjusted_utilization
+                      << get_state().cpu.utilization_timestamp.sec_since_epoch ();
       }
 
       if (payer != receiver)
