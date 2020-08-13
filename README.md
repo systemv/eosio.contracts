@@ -10,6 +10,14 @@ make -j
 
 ./tests/unit_test -t eosio_system_rentbw_tests/model_tests
 
+or just
+
+./tests/unit_test
+
+to use gnuplot to plot the results from project directory:
+
+sh plot.sh
+
 ## Version : 1.8.0-rc1
 
 The design of the EOSIO blockchain calls for a number of smart contracts that are run at a privileged permission level in order to support functions such as block producer registration and voting, token staking for CPU and network bandwidth, RAM purchasing, multi-sig, etc.  These smart contracts are referred to as the bios, system, msig, wrap (formerly known as sudo) and token contracts.
