@@ -61,11 +61,12 @@ struct rentbw_state_resource
    int64_t utilization;
    int64_t adjusted_utilization;
    time_point_sec utilization_timestamp;
+   int64_t fee;
 };
 FC_REFLECT(rentbw_state_resource,                                                                           //
            (version)(weight)(weight_ratio)(assumed_stake_weight)(initial_weight_ratio)(target_weight_ratio) //
            (initial_timestamp)(target_timestamp)(exponent)(decay_secs)(min_price)(max_price)(utilization)   //
-           (adjusted_utilization)(utilization_timestamp))
+           (adjusted_utilization)(utilization_timestamp)(fee))
 
 struct rentbw_state
 {
@@ -116,7 +117,9 @@ struct rentbw_tester : eosio_system_tester
                          << "max_price"
                          << "utilization"
                          << "adjusted_utilization"
-                         << "utilization_timestamp";
+                         << "utilization_timestamp"
+
+                         << "calc_rentbw_fee";
 
          header.writeToFile(CSV_FILENAME);
       }
@@ -307,7 +310,8 @@ struct rentbw_tester : eosio_system_tester
                       << get_state().cpu.max_price.to_string()
                       << get_state().cpu.utilization
                       << get_state().cpu.adjusted_utilization
-                      << get_state().cpu.utilization_timestamp.sec_since_epoch();
+                      << get_state().cpu.utilization_timestamp.sec_since_epoch()
+                      << get_state().cpu.fee;
       }
 
       if (payer != receiver)
