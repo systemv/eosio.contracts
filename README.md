@@ -10,12 +10,8 @@ cmake -DBUILD_TESTS=true ..
 
 make -j
 
-./tests/unit_test -t eosio_system_rentbw_tests/model_tests
+from the project folder execute:
 
-or just
+sh run_and_plot.sh model.json out.csv
 
-./tests/unit_test
-
-to use gnuplot to plot the results from project directory:
-
-sh plot.sh
+where model.json is a rentbw configuration file, out.csv - output csv file
