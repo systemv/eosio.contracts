@@ -300,7 +300,7 @@ struct rentbw_tester : eosio_system_tester
    {
       int64_t ram = 0;
       int64_t net = 0;
-      int64_t cpu = 999990;
+      int64_t cpu = 0;
       asset liquid;
    };
 
@@ -400,34 +400,9 @@ BOOST_FIXTURE_TEST_CASE(model_tests, rentbw_tester)
 try
 {
    produce_block();
-
+  
    BOOST_REQUIRE_EQUAL("", configbw(make_config_from_file(CFG_FILENAME, [&](auto &config) {
-                          config.net.current_weight_ratio = rentbw_frac;
-                          config.net.target_weight_ratio = rentbw_frac;
-                          config.net.assumed_stake_weight = stake_weight;
-                          config.net.exponent = 1;
-                          config.net.min_price = asset::from_string("1000000.0000 TST");
-                          config.net.max_price = asset::from_string("1000000.0000 TST");
-
-                          config.cpu.current_weight_ratio = rentbw_frac;
-                          config.cpu.target_weight_ratio = rentbw_frac;
-                          config.cpu.assumed_stake_weight = stake_weight;
-                          config.cpu.exponent = 1;
-                          config.cpu.min_price = asset::from_string("1000000.0000 TST");
-                          config.cpu.max_price = asset::from_string("1000000.0000 TST");
-
-                          config.rent_days = 30;
-                          config.min_rent_fee = asset::from_string("1.0000 TST");
-                       })));
-
-   BOOST_REQUIRE_EQUAL("", configbw(make_default_config([&](auto &config) {
-                          // weight = stake_weight
-                          config.net.current_weight_ratio = rentbw_frac / 2;
-                          config.net.target_weight_ratio = rentbw_frac / 2;
-
-                          // weight = stake_weight
-                          config.cpu.current_weight_ratio = rentbw_frac / 2;
-                          config.cpu.target_weight_ratio = rentbw_frac / 2;
+                      
                        })));
 
    auto net_weight = stake_weight;
@@ -444,6 +419,17 @@ try
    {
       check_rentbw(N(aaaaaaaaaaaa), N(aaaaaaaaaaaa), 30, rentbw_frac * .1, rentbw_frac * .2,
                    asset::from_string("300000.0000 TST"), net_weight * .1, cpu_weight * .2);
+      produce_block(fc::days(10) - fc::milliseconds(500));
+   }
+
+   produce_block(fc::days(60) - fc::milliseconds(500));
+   BOOST_REQUIRE_EQUAL("", rentbwexec(config::system_account_name, 10));
+
+      // 10%, 20%
+   for (int i = 0; i < 3; i++)
+   {
+      check_rentbw(N(aaaaaaaaaaaa), N(aaaaaaaaaaaa), 30, rentbw_frac * .05, rentbw_frac * .1,
+                   asset::from_string("300000.0000 TST"), net_weight * .05, cpu_weight * .1);
       produce_block(fc::days(10) - fc::milliseconds(500));
    }
 
