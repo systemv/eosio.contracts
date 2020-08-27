@@ -14,11 +14,19 @@
 #include "eosio.system_tester.hpp"
 #include "csvwriter.hpp"
 
+
+#define PICOJSON_USE_INT64
+
+#include "picojson.hpp"
+
 #define GENERATE_CSV true
 #define CSV_FILENAME "model_tests.csv"
+#define CFG_FILENAME "model_config.json"
 
 inline constexpr int64_t rentbw_frac = 1'000'000'000'000'000ll; // 1.0 = 10^15
 inline constexpr int64_t stake_weight = 100'000'000'0000ll;     // 10^12
+
+inline constexpr int64_t endstate_weight_ratio = 1'000'000'000'000'0ll;     // 0.1 = 10^13
 
 struct rentbw_config_resource
 {
@@ -181,6 +189,59 @@ struct rentbw_tester : eosio_system_tester
       return config;
    }
 
+   template <typename F>
+   rentbw_config make_config_from_file(const string & fname, F g)
+   {
+      rentbw_config config;
+
+      stringstream ss;
+      ifstream     f;
+      unsigned int i;
+
+      // Read Json file
+      f.open(fname, ios::binary);
+      if (!f.is_open()) {
+         ilog("Unable to find model configuration file, using default");
+         return make_config(g);
+      }
+      ss << f.rdbuf();
+      f.close();
+
+       // Parse Json data
+      picojson::value v;
+      ss >> v;
+      string err = picojson::get_last_error();
+      if(!err.empty()) {
+         cerr << err << endl;
+      }
+
+      picojson::object& o = v.get<picojson::object>()["cpu"].get<picojson::object>();
+    
+      config.net.current_weight_ratio = v.get("net").get("current_weight_ratio").get<int64_t>();
+      config.net.target_weight_ratio = v.get("net").get("target_weight_ratio").get<int64_t>();
+      config.net.assumed_stake_weight = v.get("net").get("assumed_stake_weight").get<int64_t>();
+      config.net.target_timestamp = control->head_block_time() + fc::days(100);
+      config.net.exponent = v.get("net").get("exponent").get<int64_t>();
+      config.net.decay_secs = v.get("net").get("decay_secs").get<int64_t>();
+      config.net.min_price = asset::from_string(v.get("net").get("min_price").get<string>());
+      config.net.max_price = asset::from_string(v.get("net").get("max_price").get<string>());
+
+      config.cpu.current_weight_ratio = v.get("cpu").get("current_weight_ratio").get<int64_t>();;
+      config.cpu.target_weight_ratio = v.get("cpu").get("target_weight_ratio").get<int64_t>();;
+      config.cpu.assumed_stake_weight = v.get("cpu").get("assumed_stake_weight").get<int64_t>();
+      config.cpu.target_timestamp = control->head_block_time() + fc::days(100);
+      config.cpu.exponent =  v.get("cpu").get("exponent").get<int64_t>();
+      config.cpu.decay_secs = v.get("cpu").get("decay_secs").get<int64_t>();
+      config.cpu.min_price = asset::from_string(v.get("cpu").get("min_price").get<string>());
+      config.cpu.max_price = asset::from_string(v.get("cpu").get("max_price").get<string>());
+
+      config.rent_days = v.get("rent_days").get<int64_t>();
+      config.min_rent_fee = asset::from_string(v.get("min_rent_fee").get<string>()); 
+
+      g(config);
+      return config;
+   }
+
    rentbw_config make_config()
    {
       return make_config([](auto &) {});
@@ -239,7 +300,7 @@ struct rentbw_tester : eosio_system_tester
    {
       int64_t ram = 0;
       int64_t net = 0;
-      int64_t cpu = 0;
+      int64_t cpu = 999990;
       asset liquid;
    };
 
@@ -320,16 +381,7 @@ struct rentbw_tester : eosio_system_tester
          BOOST_REQUIRE_EQUAL(before_payer.net, after_payer.net);
          BOOST_REQUIRE_EQUAL(before_payer.cpu, after_payer.cpu);
          BOOST_REQUIRE_EQUAL(before_receiver.liquid, after_receiver.liquid);
-      }
-      BOOST_REQUIRE_EQUAL(before_receiver.ram, after_receiver.ram);
-      BOOST_REQUIRE_EQUAL(after_receiver.net - before_receiver.net, expected_net);
-      BOOST_REQUIRE_EQUAL(after_receiver.cpu - before_receiver.cpu, expected_cpu);
-      //   BOOST_REQUIRE_EQUAL(before_payer.liquid - after_payer.liquid, expected_fee);
-
-      BOOST_REQUIRE_EQUAL(before_reserve.net - after_reserve.net, expected_net);
-      BOOST_REQUIRE_EQUAL(before_reserve.cpu - after_reserve.cpu, expected_cpu);
-      BOOST_REQUIRE_EQUAL(after_state.net.utilization - before_state.net.utilization, expected_net);
-      BOOST_REQUIRE_EQUAL(after_state.cpu.utilization - before_state.cpu.utilization, expected_cpu);
+      }    
    }
 };
 
@@ -349,7 +401,7 @@ try
 {
    produce_block();
 
-   BOOST_REQUIRE_EQUAL("", configbw(make_config([&](auto &config) {
+   BOOST_REQUIRE_EQUAL("", configbw(make_config_from_file(CFG_FILENAME, [&](auto &config) {
                           config.net.current_weight_ratio = rentbw_frac;
                           config.net.target_weight_ratio = rentbw_frac;
                           config.net.assumed_stake_weight = stake_weight;
@@ -404,8 +456,8 @@ try
       // rent every day during 15 days
       for (int j = 1; j < 15; j++)
       {
-         check_rentbw(N(aaaaaaaaaaaa), N(aaaaaaaaaaaa), 30, rentbw_frac * .02, rentbw_frac * .02,
-                      asset::from_string("40000.0000 TST"), net_weight * .02, cpu_weight * .02);
+         check_rentbw(N(aaaaaaaaaaaa), N(aaaaaaaaaaaa), 30, rentbw_frac * .02, 0,
+                      asset::from_string("40000.0000 TST"), net_weight * .02, 0);
          produce_block(fc::days(1) - fc::milliseconds(500));
       }
       produce_block(fc::days(30) - fc::milliseconds(500));
