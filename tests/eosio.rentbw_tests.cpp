@@ -399,50 +399,6 @@ bool near(A a, B b, D delta)
    return false;
 }
 
-void exec_rentals(void)
-{
-   
-
-/*
-    // 10%, 20%
-   for (int i = 0; i < 3; i++)
-   {
-      check_rentbw(N(aaaaaaaaaaaa), N(aaaaaaaaaaaa), 30, rentbw_frac * .1, rentbw_frac * .2,
-                   asset::from_string("300000.0000 TST"), net_weight * .1, cpu_weight * .2);
-      produce_block(fc::days(10) - fc::milliseconds(500));
-   }
-
-   produce_block(fc::days(60) - fc::milliseconds(500));
-   BOOST_REQUIRE_EQUAL("", rentbwexec(config::system_account_name, 10));
-
-      // 10%, 20%
-   for (int i = 0; i < 3; i++)
-   {
-      check_rentbw(N(aaaaaaaaaaaa), N(aaaaaaaaaaaa), 30, rentbw_frac * .05, rentbw_frac * .1,
-                   asset::from_string("300000.0000 TST"), net_weight * .05, cpu_weight * .1);
-      produce_block(fc::days(10) - fc::milliseconds(500));
-   }
-
-   produce_block(fc::days(60) - fc::milliseconds(500));
-   BOOST_REQUIRE_EQUAL("", rentbwexec(config::system_account_name, 10));
-
-   // 2%, 2%
-   for (int m = 0; m < 6; m++)
-   {
-      // rent every day during 15 days
-      for (int j = 1; j < 15; j++)
-      {
-         check_rentbw(N(aaaaaaaaaaaa), N(aaaaaaaaaaaa), 30, rentbw_frac * .02, 0,
-                      asset::from_string("40000.0000 TST"), net_weight * .02, 0);
-         produce_block(fc::days(1) - fc::milliseconds(500));
-      }
-      produce_block(fc::days(30) - fc::milliseconds(500));
-      BOOST_REQUIRE_EQUAL("", rentbwexec(config::system_account_name, 100));
-   }   
-   */
-
-}
-
 BOOST_AUTO_TEST_SUITE(eosio_system_rentbw_tests)
 
 BOOST_FIXTURE_TEST_CASE(model_tests, rentbw_tester)
