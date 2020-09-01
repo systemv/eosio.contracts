@@ -15,5 +15,5 @@ set grid mytics
 set grid back ls 81
 
   set key autotitle columnhead
-  plot 'build/model_tests.csv' using 1:24 w lp ls 1, '' using 1:25 w lp ls 2
+  plot 'model_tests.csv' using 1:24 w lp ls 1, '' using 1:25 w lp ls 2
 " | gnuplot --persist

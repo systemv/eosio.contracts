@@ -1,12 +1,15 @@
 
 if [ $# -eq 0 ]; then
-    echo "Usage: run_and_plot model_config_foo.json csv_output_foo.csv"
+    echo "Usage: run_and_plot model_config.json rentbw_input.csv csv_output.csv"
     exit 1
 fi
 
-cp $1 model_config.json
+cp $1 _model_config.json
+cp $2 _rentbw_input.csv
+
 build/tests/unit_test
-cp model_tests.csv $2 
+
+cp model_tests.csv $3 
 
 echo "
   set datafile separator ';'
@@ -25,5 +28,5 @@ set grid mytics
 set grid back ls 81
 
   set key autotitle columnhead
-  plot '$2' using 1:24 w lp ls 1, '' using 1:25 w lp ls 2
+  plot '$3' using 1:24 w lp ls 1, '' using 1:25 w lp ls 2
 " | gnuplot --persist

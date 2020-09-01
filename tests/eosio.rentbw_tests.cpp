@@ -10,9 +10,12 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <time.h>
+
 
 #include "eosio.system_tester.hpp"
 #include "csvwriter.hpp"
+#include "csv.h"
 
 
 #define PICOJSON_USE_INT64
@@ -21,7 +24,9 @@
 
 #define GENERATE_CSV true
 #define CSV_FILENAME "model_tests.csv"
-#define CFG_FILENAME "model_config.json"
+#define CFG_FILENAME "_model_config.json"
+#define INP_FILENAME "_rentbw_input.csv"
+
 
 inline constexpr int64_t rentbw_frac = 1'000'000'000'000'000ll; // 1.0 = 10^15
 inline constexpr int64_t stake_weight = 100'000'000'0000ll;     // 10^12
@@ -319,7 +324,7 @@ struct rentbw_tester : eosio_system_tester
       auto before_receiver = get_account_info(receiver);
       auto before_reserve = get_account_info(N(eosio.reserv));
       auto before_state = get_state();
-      BOOST_REQUIRE_EQUAL("", rentbw(payer, receiver, days, net_frac, cpu_frac, asset::from_string("300000.0000 TST")));
+      BOOST_REQUIRE_EQUAL("", rentbw(payer, receiver, days, net_frac, cpu_frac, expected_fee));
       auto after_payer = get_account_info(payer);
       auto after_receiver = get_account_info(receiver);
       auto after_reserve = get_account_info(N(eosio.reserv));
@@ -394,27 +399,12 @@ bool near(A a, B b, D delta)
    return false;
 }
 
-BOOST_AUTO_TEST_SUITE(eosio_system_rentbw_tests)
-
-BOOST_FIXTURE_TEST_CASE(model_tests, rentbw_tester)
-try
+void exec_rentals(void)
 {
-   produce_block();
-  
-   BOOST_REQUIRE_EQUAL("", configbw(make_config_from_file(CFG_FILENAME, [&](auto &config) {
-                      
-                       })));
+   
 
-   auto net_weight = stake_weight;
-   auto cpu_weight = stake_weight;
-
-   start_rex();
-   create_account_with_resources(N(aaaaaaaaaaaa), config::system_account_name, core_sym::from_string("1.0000"),
-                                 false, core_sym::from_string("500.0000"), core_sym::from_string("500.0000"));
-
-   transfer(config::system_account_name, N(aaaaaaaaaaaa), core_sym::from_string("5000000.0000"));
-
-   // 10%, 20%
+/*
+    // 10%, 20%
    for (int i = 0; i < 3; i++)
    {
       check_rentbw(N(aaaaaaaaaaaa), N(aaaaaaaaaaaa), 30, rentbw_frac * .1, rentbw_frac * .2,
@@ -449,6 +439,82 @@ try
       produce_block(fc::days(30) - fc::milliseconds(500));
       BOOST_REQUIRE_EQUAL("", rentbwexec(config::system_account_name, 100));
    }   
+   */
+
+}
+
+BOOST_AUTO_TEST_SUITE(eosio_system_rentbw_tests)
+
+BOOST_FIXTURE_TEST_CASE(model_tests, rentbw_tester)
+try
+{
+   produce_block();
+  
+   BOOST_REQUIRE_EQUAL("", configbw(make_config_from_file(CFG_FILENAME, [&](auto &config) {
+                      
+                       })));
+
+   auto net_weight = stake_weight;
+   auto cpu_weight = stake_weight;
+
+   start_rex();
+   create_account_with_resources(N(aaaaaaaaaaaa), config::system_account_name, core_sym::from_string("1.0000"),
+                                 false, core_sym::from_string("500.0000"), core_sym::from_string("500.0000"));
+
+   transfer(config::system_account_name, N(aaaaaaaaaaaa), core_sym::from_string("5000000.0000"));
+
+   io::CSVReader<9> in(INP_FILENAME);
+    in.read_header(io::ignore_extra_column, "datetime", "function", "payer", "receiver", "days", "net_frac", "cpu_frac", "max_payment", "queue_max");
+   
+    std::string   datetime, function, payer, receiver;
+    uint32_t      days;
+    int64_t       net_frac,cpu_frac;
+    std:: string  max_payment;
+    uint16_t      queue_max;
+
+    std::chrono::system_clock::time_point cursor; 
+    bool first_timepoint = true;
+
+    while(in.read_row(datetime,function,payer,receiver,days,net_frac,cpu_frac,max_payment,queue_max)){
+       if (function ==  "rentbwexec") {
+            std::cout << "!! RentbwExec called with que_max: " << queue_max << std::endl;
+            BOOST_REQUIRE_EQUAL("", rentbwexec(config::system_account_name, queue_max));
+       }
+       else if (function ==  "rentbw") {
+          
+            std::tm tm = {};
+
+            ::strptime(datetime.c_str(), "%m/%d/%Y %H:%M:%S", &tm);
+            auto tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
+            auto time_diff = 0;
+
+            if (first_timepoint) {
+               cursor = tp;
+               first_timepoint = false;
+            }
+            else {
+                time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(tp - cursor).count(); 
+                cursor = tp;
+            }
+       
+            if (time_diff>500) {
+               produce_block(fc::milliseconds(time_diff) - fc::milliseconds(500));
+            }
+
+
+            account_name payer_name = string_to_name(payer);
+            account_name receiver_name = string_to_name(receiver);
+
+            check_rentbw(payer_name, receiver_name, 
+               days, net_frac, cpu_frac, asset::from_string(max_payment + " TST"), 0,0);
+       }
+       else {
+          // 
+       }
+        
+    }
+
+  
 }
 FC_LOG_AND_RETHROW()
 
