@@ -225,7 +225,7 @@ struct rentbw_tester : eosio_system_tester
       config.net.current_weight_ratio = v.get("net").get("current_weight_ratio").get<int64_t>();
       config.net.target_weight_ratio = v.get("net").get("target_weight_ratio").get<int64_t>();
       config.net.assumed_stake_weight = v.get("net").get("assumed_stake_weight").get<int64_t>();
-      config.net.target_timestamp = control->head_block_time() + fc::days(100);
+      config.net.target_timestamp = control->head_block_time() + fc::days(v.get("net").get("target_timestamp").get<int64_t>());
       config.net.exponent = v.get("net").get("exponent").get<int64_t>();
       config.net.decay_secs = v.get("net").get("decay_secs").get<int64_t>();
       config.net.min_price = asset::from_string(v.get("net").get("min_price").get<string>());
@@ -234,7 +234,7 @@ struct rentbw_tester : eosio_system_tester
       config.cpu.current_weight_ratio = v.get("cpu").get("current_weight_ratio").get<int64_t>();;
       config.cpu.target_weight_ratio = v.get("cpu").get("target_weight_ratio").get<int64_t>();;
       config.cpu.assumed_stake_weight = v.get("cpu").get("assumed_stake_weight").get<int64_t>();
-      config.cpu.target_timestamp = control->head_block_time() + fc::days(100);
+      config.cpu.target_timestamp = control->head_block_time() + fc::days(v.get("cpu").get("target_timestamp").get<int64_t>());
       config.cpu.exponent =  v.get("cpu").get("exponent").get<int64_t>();
       config.cpu.decay_secs = v.get("cpu").get("decay_secs").get<int64_t>();
       config.cpu.min_price = asset::from_string(v.get("cpu").get("min_price").get<string>());
@@ -456,7 +456,6 @@ try
             if (time_diff>500) {
                produce_block(fc::milliseconds(time_diff) - fc::milliseconds(500));
             }
-
 
             account_name payer_name = string_to_name(payer);
             account_name receiver_name = string_to_name(receiver);

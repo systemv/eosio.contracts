@@ -6,7 +6,7 @@
         "exponent": 2,
         "max_price": "1000000.0000 TST",
         "min_price": "1000000.0000 TST",
-        "target_timestamp": "2020-09-19T12:58:11",
+        "target_timestamp": 10,
         "target_weight_ratio": 500000000000000
     },
     "min_rent_fee": "1.0000 TST",
@@ -17,7 +17,7 @@
         "exponent": 2,
         "max_price": "1000000.0000 TST",
         "min_price": "1000000.0000 TST",
-        "target_timestamp": "2020-08-30T12:58:11",
+        "target_timestamp": 10,
         "target_weight_ratio": 500000000000000
     },
     "rent_days": 30
