@@ -229,11 +229,9 @@ struct rentbw_tester : eosio_system_tester
       config.net.decay_secs = v.get("net").get("decay_secs").get<int64_t>();
       config.net.min_price = asset::from_string(v.get("net").get("min_price").get<string>());
       config.net.max_price = asset::from_string(v.get("net").get("max_price").get<string>());
-
       config.cpu.current_weight_ratio = v.get("cpu").get("current_weight_ratio").get<int64_t>();
-      ;
       config.cpu.target_weight_ratio = v.get("cpu").get("target_weight_ratio").get<int64_t>();
-      ;
+      
       config.cpu.assumed_stake_weight = v.get("cpu").get("assumed_stake_weight").get<int64_t>();
       config.cpu.target_timestamp = control->head_block_time() + fc::days(v.get("cpu").get("target_timestamp").get<int64_t>());
       config.cpu.exponent = v.get("cpu").get("exponent").get<int64_t>();
@@ -325,7 +323,14 @@ struct rentbw_tester : eosio_system_tester
       auto before_receiver = get_account_info(receiver);
       auto before_reserve = get_account_info(N(eosio.reserv));
       auto before_state = get_state();
-      BOOST_REQUIRE_EQUAL("", rentbw(payer, receiver, days, net_frac, cpu_frac, expected_fee));
+      try {
+         rentbw(payer, receiver, days, net_frac, cpu_frac, expected_fee);
+      }
+      catch (const fc::exception& ex)
+      {
+         edump((ex.to_detail_string()));
+         return;
+      }
       auto after_payer = get_account_info(payer);
       auto after_receiver = get_account_info(receiver);
       auto after_reserve = get_account_info(N(eosio.reserv));
@@ -415,6 +420,9 @@ struct rentbw_tester : eosio_system_tester
       {
          produce_block(fc::milliseconds(time_diff) - fc::milliseconds(500));
       }
+      else {
+         produce_block();
+      }
    }
 };
 
@@ -481,6 +489,7 @@ try
       {
          //
       }
+      
    }
 }
 FC_LOG_AND_RETHROW()
