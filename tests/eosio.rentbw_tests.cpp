@@ -12,11 +12,9 @@
 #include <fstream>
 #include <time.h>
 
-
 #include "eosio.system_tester.hpp"
 #include "csvwriter.hpp"
 #include "csv.h"
-
 
 #define PICOJSON_USE_INT64
 
@@ -27,11 +25,10 @@
 #define CFG_FILENAME "_model_config.json"
 #define INP_FILENAME "_rentbw_input.csv"
 
-
 inline constexpr int64_t rentbw_frac = 1'000'000'000'000'000ll; // 1.0 = 10^15
 inline constexpr int64_t stake_weight = 100'000'000'0000ll;     // 10^12
 
-inline constexpr int64_t endstate_weight_ratio = 1'000'000'000'000'0ll;     // 0.1 = 10^13
+inline constexpr int64_t endstate_weight_ratio = 1'000'000'000'000'0ll; // 0.1 = 10^13
 
 struct rentbw_config_resource
 {
@@ -195,33 +192,35 @@ struct rentbw_tester : eosio_system_tester
    }
 
    template <typename F>
-   rentbw_config make_config_from_file(const string & fname, F g)
+   rentbw_config make_config_from_file(const string &fname, F g)
    {
       rentbw_config config;
 
       stringstream ss;
-      ifstream     f;
+      ifstream f;
       unsigned int i;
 
       // Read Json file
       f.open(fname, ios::binary);
-      if (!f.is_open()) {
+      if (!f.is_open())
+      {
          ilog("Unable to find model configuration file, using default");
          return make_config(g);
       }
       ss << f.rdbuf();
       f.close();
 
-       // Parse Json data
+      // Parse Json data
       picojson::value v;
       ss >> v;
       string err = picojson::get_last_error();
-      if(!err.empty()) {
+      if (!err.empty())
+      {
          cerr << err << endl;
       }
 
-      picojson::object& o = v.get<picojson::object>()["cpu"].get<picojson::object>();
-    
+      picojson::object &o = v.get<picojson::object>()["cpu"].get<picojson::object>();
+
       config.net.current_weight_ratio = v.get("net").get("current_weight_ratio").get<int64_t>();
       config.net.target_weight_ratio = v.get("net").get("target_weight_ratio").get<int64_t>();
       config.net.assumed_stake_weight = v.get("net").get("assumed_stake_weight").get<int64_t>();
@@ -231,17 +230,19 @@ struct rentbw_tester : eosio_system_tester
       config.net.min_price = asset::from_string(v.get("net").get("min_price").get<string>());
       config.net.max_price = asset::from_string(v.get("net").get("max_price").get<string>());
 
-      config.cpu.current_weight_ratio = v.get("cpu").get("current_weight_ratio").get<int64_t>();;
-      config.cpu.target_weight_ratio = v.get("cpu").get("target_weight_ratio").get<int64_t>();;
+      config.cpu.current_weight_ratio = v.get("cpu").get("current_weight_ratio").get<int64_t>();
+      ;
+      config.cpu.target_weight_ratio = v.get("cpu").get("target_weight_ratio").get<int64_t>();
+      ;
       config.cpu.assumed_stake_weight = v.get("cpu").get("assumed_stake_weight").get<int64_t>();
       config.cpu.target_timestamp = control->head_block_time() + fc::days(v.get("cpu").get("target_timestamp").get<int64_t>());
-      config.cpu.exponent =  v.get("cpu").get("exponent").get<int64_t>();
+      config.cpu.exponent = v.get("cpu").get("exponent").get<int64_t>();
       config.cpu.decay_secs = v.get("cpu").get("decay_secs").get<int64_t>();
       config.cpu.min_price = asset::from_string(v.get("cpu").get("min_price").get<string>());
       config.cpu.max_price = asset::from_string(v.get("cpu").get("max_price").get<string>());
 
       config.rent_days = v.get("rent_days").get<int64_t>();
-      config.min_rent_fee = asset::from_string(v.get("min_rent_fee").get<string>()); 
+      config.min_rent_fee = asset::from_string(v.get("min_rent_fee").get<string>());
 
       g(config);
       return config;
@@ -386,7 +387,34 @@ struct rentbw_tester : eosio_system_tester
          BOOST_REQUIRE_EQUAL(before_payer.net, after_payer.net);
          BOOST_REQUIRE_EQUAL(before_payer.cpu, after_payer.cpu);
          BOOST_REQUIRE_EQUAL(before_receiver.liquid, after_receiver.liquid);
-      }    
+      }
+   }
+
+   void produce_blocks_date(const char *str)
+   {
+      static bool first_timepoint = true;
+      static std::chrono::system_clock::time_point cursor;
+      std::tm tm = {};
+
+      ::strptime(str, "%m/%d/%Y %H:%M:%S", &tm);
+      auto tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
+      auto time_diff = 0;
+
+      if (first_timepoint)
+      {
+         cursor = tp;
+         first_timepoint = false;
+      }
+      else
+      {
+         time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(tp - cursor).count();
+         cursor = tp;
+      }
+
+      if (time_diff > 500)
+      {
+         produce_block(fc::milliseconds(time_diff) - fc::milliseconds(500));
+      }
    }
 };
 
@@ -405,9 +433,9 @@ BOOST_FIXTURE_TEST_CASE(model_tests, rentbw_tester)
 try
 {
    produce_block();
-  
+
    BOOST_REQUIRE_EQUAL("", configbw(make_config_from_file(CFG_FILENAME, [&](auto &config) {
-                      
+
                        })));
 
    auto net_weight = stake_weight;
@@ -420,56 +448,40 @@ try
    transfer(config::system_account_name, N(aaaaaaaaaaaa), core_sym::from_string("5000000.0000"));
 
    io::CSVReader<9> in(INP_FILENAME);
-    in.read_header(io::ignore_extra_column, "datetime", "function", "payer", "receiver", "days", "net_frac", "cpu_frac", "max_payment", "queue_max");
-   
-    std::string   datetime, function, payer, receiver;
-    uint32_t      days;
-    int64_t       net_frac,cpu_frac;
-    std:: string  max_payment;
-    uint16_t      queue_max;
+   in.read_header(io::ignore_extra_column, "datetime", "function", "payer", "receiver", "days", "net_frac", "cpu_frac", "max_payment", "queue_max");
 
-    std::chrono::system_clock::time_point cursor; 
-    bool first_timepoint = true;
+   std::string datetime, function, payer, receiver;
+   uint32_t days;
+   int64_t net_frac, cpu_frac;
+   std::string max_payment;
+   uint16_t queue_max;
 
-    while(in.read_row(datetime,function,payer,receiver,days,net_frac,cpu_frac,max_payment,queue_max)){
-       if (function ==  "rentbwexec") {
-            std::cout << "!! RentbwExec called with que_max: " << queue_max << std::endl;
-            BOOST_REQUIRE_EQUAL("", rentbwexec(config::system_account_name, queue_max));
-       }
-       else if (function ==  "rentbw") {
-          
-            std::tm tm = {};
+   std::chrono::system_clock::time_point cursor;
+   bool first_timepoint = true;
 
-            ::strptime(datetime.c_str(), "%m/%d/%Y %H:%M:%S", &tm);
-            auto tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
-            auto time_diff = 0;
+   while (in.read_row(datetime, function, payer, receiver, days, net_frac, cpu_frac, max_payment, queue_max))
+   {
+      if (function == "rentbwexec")
+      {
+         produce_blocks_date(datetime.c_str());
+         
+         BOOST_REQUIRE_EQUAL("", rentbwexec(config::system_account_name, queue_max));
+      }
+      else if (function == "rentbw")
+      {
+         produce_blocks_date(datetime.c_str());
 
-            if (first_timepoint) {
-               cursor = tp;
-               first_timepoint = false;
-            }
-            else {
-                time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(tp - cursor).count(); 
-                cursor = tp;
-            }
-       
-            if (time_diff>500) {
-               produce_block(fc::milliseconds(time_diff) - fc::milliseconds(500));
-            }
+         account_name payer_name = string_to_name(payer);
+         account_name receiver_name = string_to_name(receiver);
 
-            account_name payer_name = string_to_name(payer);
-            account_name receiver_name = string_to_name(receiver);
-
-            check_rentbw(payer_name, receiver_name, 
-               days, net_frac, cpu_frac, asset::from_string(max_payment + " TST"), 0,0);
-       }
-       else {
-          // 
-       }
-        
-    }
-
-  
+         check_rentbw(payer_name, receiver_name,
+                      days, net_frac, cpu_frac, asset::from_string(max_payment + " TST"), 0, 0);
+      }
+      else
+      {
+         //
+      }
+   }
 }
 FC_LOG_AND_RETHROW()
 
