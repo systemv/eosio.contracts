@@ -26,17 +26,20 @@ namespace eosio {
           *
           * Execute a transaction while bypassing regular authorization checks.
           *
+          * Preconditions:
+          * - Requires authorization of eosio.wrap which needs to be a privileged account.
+          *
+          * Postconditions:
+          * - Deferred transaction RAM usage is billed to 'executer'
+          *
           * @param executer - account executing the transaction,
           * @param trx - the transaction to be executed.
           *
-          * @pre Requires authorization of eosio.wrap which needs to be a privileged account.
-          *
-          * @post Deferred transaction RAM usage is billed to 'executer'
+          * @pre
           */
          [[eosio::action]]
          void exec( ignore<name> executer, ignore<transaction> trx );
 
          using exec_action = eosio::action_wrapper<"exec"_n, &wrap::exec>;
    };
-   /** @}*/ // end of @defgroup eosiowrap eosio.wrap
 } /// namespace eosio
