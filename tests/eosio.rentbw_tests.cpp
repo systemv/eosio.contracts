@@ -25,9 +25,6 @@
 #define CFG_FILENAME "_model_config.json"
 #define INP_FILENAME "_rentbw_input.csv"
 
-// calibration for amount of blocks to pre-heat
-#define SEC_OFFSET   57
-
 inline constexpr int64_t rentbw_frac = 1'000'000'000'000'000ll; // 1.0 = 10^15
 inline constexpr int64_t stake_weight = 100'000'000'0000ll;     // 10^12
 
@@ -96,7 +93,8 @@ using namespace eosio_system;
 struct rentbw_tester : eosio_system_tester
 {
    CSVWriter csv;
-
+   int64_t  timeOffset = 0; 
+ 
    rentbw_tester()
    {
       create_accounts_with_resources({N(eosio.reserv)});
@@ -367,7 +365,7 @@ struct rentbw_tester : eosio_system_tester
          ilog("before_reserve.cpu:                       ${x}", ("x", before_reserve.cpu));
          ilog("after_reserve.cpu:                        ${x}", ("x", after_reserve.cpu));
 
-         csv.newRow() << last_block_time() - SEC_OFFSET
+         csv.newRow() << last_block_time() - timeOffset
                       << before_state.net.assumed_stake_weight
                       << before_state.net.weight_ratio / double(rentbw_frac)
                       << before_state.net.weight
@@ -408,21 +406,32 @@ struct rentbw_tester : eosio_system_tester
       }
    }
 
-   void produce_blocks_date(const char *str)
+   void produce_blocks_date(const char *str, std::string function)
    {
-      static std::chrono::system_clock::time_point cursor = std::chrono::system_clock::from_time_t(last_block_time() - SEC_OFFSET);
+      static std::chrono::system_clock::time_point cursor = std::chrono::system_clock::from_time_t(last_block_time());
+
 
       std::tm tm = {};
       ::strptime(str, "%m/%d/%Y %H:%M:%S", &tm);
       time_t  ttp = std::mktime(&tm);
-    
-     
+         
       auto utc_field = *std::gmtime(&ttp);
       time_t  ttpc = std::mktime(&utc_field);
       time_t  timezone = ttpc - ttp;
 
+      // csv time in gmt
+      time_t  csvtime = ttp - timezone;
+
+      // if first run - calculate offset
+      if (timeOffset == 0) {
+         timeOffset = last_block_time() - csvtime; // account for blocktime
+         cursor     = std::chrono::system_clock::from_time_t(last_block_time() - timeOffset);
+      } 
+
       auto tp = std::chrono::system_clock::from_time_t(ttp - timezone);
       auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(tp - cursor).count();
+
+      //cout << "Time difference: " << std::chrono::system_clock::to_time_t(cursor) << " -- " << std::chrono::system_clock::to_time_t(tp);
 
       cursor = tp;
     
@@ -430,9 +439,9 @@ struct rentbw_tester : eosio_system_tester
       {
          produce_block(fc::milliseconds(time_diff) - fc::milliseconds(500));
       }
-      else {
+      else if (function == "rentbw") {
          produce_block();
-      }
+      }      
    }
 };
 
@@ -481,7 +490,7 @@ try
    {
       if (function == "rentbwexec" || function == "rentbw")
       {
-         produce_blocks_date(datetime.c_str());
+         produce_blocks_date(datetime.c_str(), function);
 
          account_name payer_name = string_to_name(payer);
          account_name receiver_name = string_to_name(receiver);
