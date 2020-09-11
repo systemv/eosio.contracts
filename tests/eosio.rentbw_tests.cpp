@@ -25,6 +25,9 @@
 #define CFG_FILENAME "_model_config.json"
 #define INP_FILENAME "_rentbw_input.csv"
 
+// calibration for amount of blocks to pre-heat
+#define SEC_OFFSET   57
+
 inline constexpr int64_t rentbw_frac = 1'000'000'000'000'000ll; // 1.0 = 10^15
 inline constexpr int64_t stake_weight = 100'000'000'0000ll;     // 10^12
 
@@ -356,7 +359,7 @@ struct rentbw_tester : eosio_system_tester
          ilog("before_reserve.cpu:                       ${x}", ("x", before_reserve.cpu));
          ilog("after_reserve.cpu:                        ${x}", ("x", after_reserve.cpu));
 
-         csv.newRow() << last_block_time()
+         csv.newRow() << last_block_time() - SEC_OFFSET
                       << before_state.net.assumed_stake_weight
                       << before_state.net.weight_ratio / double(rentbw_frac)
                       << before_state.net.weight
@@ -397,25 +400,22 @@ struct rentbw_tester : eosio_system_tester
 
    void produce_blocks_date(const char *str)
    {
-      static bool first_timepoint = true;
-      static std::chrono::system_clock::time_point cursor;
+      static std::chrono::system_clock::time_point cursor = std::chrono::system_clock::from_time_t(last_block_time() - SEC_OFFSET);
+
       std::tm tm = {};
-
       ::strptime(str, "%m/%d/%Y %H:%M:%S", &tm);
-      auto tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
-      auto time_diff = 0;
+      time_t  ttp = std::mktime(&tm);
+    
+     
+      auto utc_field = *std::gmtime(&ttp);
+      time_t  ttpc = std::mktime(&utc_field);
+      time_t  timezone = ttpc - ttp;
 
-      if (first_timepoint)
-      {
-         cursor = tp;
-         first_timepoint = false;
-      }
-      else
-      {
-         time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(tp - cursor).count();
-         cursor = tp;
-      }
+      auto tp = std::chrono::system_clock::from_time_t(ttp - timezone);
+      auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(tp - cursor).count();
 
+      cursor = tp;
+    
       if (time_diff > 500)
       {
          produce_block(fc::milliseconds(time_diff) - fc::milliseconds(500));

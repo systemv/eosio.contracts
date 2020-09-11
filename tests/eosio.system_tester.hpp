@@ -15,6 +15,7 @@ using namespace fc;
 
 using mvo = fc::mutable_variant_object;
 
+
 #ifndef TESTER
 #ifdef NON_VALIDATING_TEST
 #define TESTER tester
