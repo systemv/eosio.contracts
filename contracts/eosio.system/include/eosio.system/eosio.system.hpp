@@ -7,9 +7,11 @@
 #include <eosio/singleton.hpp>
 #include <eosio/system.hpp>
 #include <eosio/time.hpp>
+#include <eosio/dispatcher.hpp>
 
 #include <eosio.system/exchange_state.hpp>
 #include <eosio.system/native.hpp>
+#include <eosio.system/wasm_abi.hpp>
 
 #include <deque>
 #include <optional>
@@ -1434,4 +1436,6 @@ namespace eosiosystem {
             int64_t& cpu_delta_available);
    };
 
+EOSIO_DECLARE_ACTIONS(system_contract, "eosio"_n,
+    init, onblock, setalimits, setacctram, setacctnet, setacctcpu, activate, delegatebw, setrex, deposit, withdraw, buyrex, unstaketorex, sellrex, cnclrexorder, rentcpu, rentnet, fundcpuloan, fundnetloan, defcpuloan, defnetloan, updaterex, rexexec, consolidate, mvtosavings, mvfrsavings, closerex, undelegatebw, buyram, buyrambytes, sellram, refund, regproducer, regproducer2, unregprod, setram, setramrate, voteproducer, regproxy, setparams, claimrewards, setpriv, rmvproducer, updtrevision, bidname, bidrefund, setinflation, configrentbw, rentbwexec, rentbw)
 }
