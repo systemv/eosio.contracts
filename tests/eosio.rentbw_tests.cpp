@@ -132,7 +132,9 @@ struct rentbw_tester : eosio_system_tester
                          << "adjusted_utilization"
                          << "utilization_timestamp"
 
-                         << "calc_rentbw_fee";
+                         << "calc_rentbw_fee"
+                         
+                         << "function";
 
          header.writeToFile(CSV_FILENAME);
       }
@@ -319,15 +321,21 @@ struct rentbw_tester : eosio_system_tester
       return info;
    };
 
+   
    void check_rentbw(const name &payer, const name &receiver, uint32_t days, int64_t net_frac, int64_t cpu_frac,
-                     const asset &expected_fee, int64_t expected_net, int64_t expected_cpu)
+                     const asset &expected_fee, int64_t expected_net, int64_t expected_cpu, uint16_t max = 0)
    {
       auto before_payer = get_account_info(payer);
       auto before_receiver = get_account_info(receiver);
       auto before_reserve = get_account_info(N(eosio.reserv));
       auto before_state = get_state();
       try {
-         rentbw(payer, receiver, days, net_frac, cpu_frac, expected_fee);
+         if (max > 0) {
+            rentbwexec(config::system_account_name, max);
+         }
+         else {
+            rentbw(payer, receiver, days, net_frac, cpu_frac, expected_fee);
+         }
       }
       catch (const fc::exception& ex)
       {
@@ -386,7 +394,9 @@ struct rentbw_tester : eosio_system_tester
                       << get_state().cpu.utilization
                       << get_state().cpu.adjusted_utilization
                       << get_state().cpu.utilization_timestamp.sec_since_epoch()
-                      << get_state().cpu.fee;
+                      << get_state().cpu.fee
+                      
+                      << (max > 0 ? "rentbwexec" : "rentbw");
       }
 
       if (payer != receiver)
@@ -469,13 +479,7 @@ try
 
    while (in.read_row(datetime, function, payer, receiver, days, net_frac, cpu_frac, max_payment, queue_max))
    {
-      if (function == "rentbwexec")
-      {
-         produce_blocks_date(datetime.c_str());
-         
-         BOOST_REQUIRE_EQUAL("", rentbwexec(config::system_account_name, queue_max));
-      }
-      else if (function == "rentbw")
+      if (function == "rentbwexec" || function == "rentbw")
       {
          produce_blocks_date(datetime.c_str());
 
@@ -483,7 +487,7 @@ try
          account_name receiver_name = string_to_name(receiver);
 
          check_rentbw(payer_name, receiver_name,
-                      days, net_frac, cpu_frac, asset::from_string(max_payment + " TST"), 0, 0);
+                      days, net_frac, cpu_frac, asset::from_string(max_payment + " TST"), 0, 0, function == "rentbwexec" ? queue_max : 0);
       }
       else
       {
