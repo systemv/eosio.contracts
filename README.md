@@ -2,6 +2,9 @@
 
 ![](./utilization.png)
 
+eosio branch: release/2.0.x
+eosio.cdt branch: eosio-cdt-2.1-staging-c
+
 mkdir build
 
 cd build
