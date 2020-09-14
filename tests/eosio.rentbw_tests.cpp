@@ -109,16 +109,11 @@ struct rentbw_tester : eosio_system_tester
                          << "after_reserve.net"
                          << "before_reserve.cpu"
                          << "after_reserve.cpu"
-                        //  << "before_receiver.net"
-                        //  << "after_receiver.net"
                          << "net.frac"
                          << "net.delta"
-                        //  << "before_receiver.cpu"
-                        //  << "after_receiver.cpu"
                          << "cpu.frac"
                          << "cpu.delta"
-                         << "fee" //"before_payer.liquid-after_payer.liquid"
-                         << "net.fee"
+                         << "fee"
                          << "net.weight"
                          << "net.weight_ratio"
                          << "net.assumed_stake_weight"
@@ -133,7 +128,6 @@ struct rentbw_tester : eosio_system_tester
                          << "net.utilization"
                          << "net.adjusted_utilization"
                          << "net.utilization_timestamp"
-                         << "cpu.fee"
                          << "cpu.weight"
                          << "cpu.weight_ratio"
                          << "cpu.assumed_stake_weight"
@@ -374,34 +368,47 @@ struct rentbw_tester : eosio_system_tester
          ilog("before_reserve.cpu:                       ${x}", ("x", before_reserve.cpu));
          ilog("after_reserve.cpu:                        ${x}", ("x", after_reserve.cpu));
 
-         csv.newRow() << last_block_time()
+         csv.newRow() csv.newRow()    << last_block_time()              
                       << before_state.net.assumed_stake_weight
                       << before_state.net.weight_ratio / double(rentbw_frac)
                       << before_state.net.weight
-                      << before_receiver.net
-                      << after_receiver.net
-                      << after_receiver.net - before_receiver.net
-                      << before_payer.liquid - after_payer.liquid
-                      << before_reserve.net
-                      << after_reserve.net
-                      << before_reserve.cpu
-                      << after_reserve.cpu
-
-                      << get_state().cpu.weight
-                      << get_state().cpu.weight_ratio
-                      << get_state().cpu.assumed_stake_weight
-                      << get_state().cpu.initial_weight_ratio
-                      << get_state().cpu.target_weight_ratio
-                      << get_state().cpu.initial_timestamp.sec_since_epoch()
-                      << get_state().cpu.target_timestamp.sec_since_epoch()
-                      << get_state().cpu.exponent
-                      << get_state().cpu.decay_secs
-                      << get_state().cpu.min_price.to_string()
-                      << get_state().cpu.max_price.to_string()
-                      << get_state().cpu.utilization
-                      << get_state().cpu.adjusted_utilization
-                      << get_state().cpu.utilization_timestamp.sec_since_epoch()
-                      << get_state().cpu.fee;
+                      << float(before_reserve.net / 10000.0)
+                      << float(after_reserve.net / 10000.0)
+                      << float(before_reserve.cpu / 10000.0)
+                      << float(after_reserve.cpu / 10000.0)
+                      << net_frac
+                      << float((after_receiver.net - before_receiver.net) / 10000.0)
+                      << cpu_frac
+                      << float((after_receiver.cpu - before_receiver.cpu) / 10000.0)
+                      << float((before_payer.liquid - after_payer.liquid).get_amount() / 10000.0) 
+                      << curr_state.net.weight
+                      << curr_state.net.weight_ratio
+                      << curr_state.net.assumed_stake_weight
+                      << curr_state.net.initial_weight_ratio
+                      << curr_state.net.target_weight_ratio
+                      << curr_state.net.initial_timestamp.sec_since_epoch()
+                      << curr_state.net.target_timestamp.sec_since_epoch()
+                      << curr_state.net.exponent
+                      << curr_state.net.decay_secs
+                      << curr_state.net.min_price.to_string()
+                      << curr_state.net.max_price.to_string()
+                      << curr_state.net.utilization
+                      << curr_state.net.adjusted_utilization
+                      << curr_state.net.utilization_timestamp.sec_since_epoch()
+                      << curr_state.cpu.weight
+                      << curr_state.cpu.weight_ratio
+                      << curr_state.cpu.assumed_stake_weight
+                      << curr_state.cpu.initial_weight_ratio
+                      << curr_state.cpu.target_weight_ratio
+                      << curr_state.cpu.initial_timestamp.sec_since_epoch()
+                      << curr_state.cpu.target_timestamp.sec_since_epoch()
+                      << curr_state.cpu.exponent
+                      << curr_state.cpu.decay_secs
+                      << curr_state.cpu.min_price.to_string()
+                      << curr_state.cpu.max_price.to_string()
+                      << curr_state.cpu.utilization
+                      << curr_state.cpu.adjusted_utilization
+                      << curr_state.cpu.utilization_timestamp.sec_since_epoch();
       }
 
       if (payer != receiver)
