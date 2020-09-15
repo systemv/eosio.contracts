@@ -106,33 +106,45 @@ struct rentbw_tester : eosio_system_tester
                          << "before_state.net.assumed_stake_weight"
                          << "before_state.net.weight_ratio"
                          << "before_state.net.weight"
-                         << "before_receiver.net"
-                         << "after_receiver.net"
-                         << "after_receiver.net-before_receiver.net"
-                         << "before_payer.liquid-after_payer.liquid"
                          << "before_reserve.net"
                          << "after_reserve.net"
                          << "before_reserve.cpu"
                          << "after_reserve.cpu"
-
-                         << "weight"
-                         << "weight_ratio"
-                         << "assumed_stake_weight"
-                         << "initial_weight_ratio"
-                         << "target_weight_ratio"
-                         << "initial_timestamp"
-                         << "target_timestamp"
-                         << "exponent"
-                         << "decay_secs"
-                         << "min_price"
-                         << "max_price"
-                         << "utilization"
-                         << "adjusted_utilization"
-                         << "utilization_timestamp"
-
-                         << "calc_rentbw_fee"
-                         
+                         << "net.frac"
+                         << "net.delta"
+                         << "cpu.frac"
+                         << "cpu.delta"
+                         << "fee"
+                         << "net.weight"
+                         << "net.weight_ratio"
+                         << "net.assumed_stake_weight"
+                         << "net.initial_weight_ratio"
+                         << "net.target_weight_ratio"
+                         << "net.initial_timestamp"
+                         << "net.target_timestamp"
+                         << "net.exponent"
+                         << "net.decay_secs"
+                         << "net.min_price"
+                         << "net.max_price"
+                         << "net.utilization"
+                         << "net.adjusted_utilization"
+                         << "net.utilization_timestamp"
+                         << "cpu.weight"
+                         << "cpu.weight_ratio"
+                         << "cpu.assumed_stake_weight"
+                         << "cpu.initial_weight_ratio"
+                         << "cpu.target_weight_ratio"
+                         << "cpu.initial_timestamp"
+                         << "cpu.target_timestamp"
+                         << "cpu.exponent"
+                         << "cpu.decay_secs"
+                         << "cpu.min_price"
+                         << "cpu.max_price"
+                         << "cpu.utilization"
+                         << "cpu.adjusted_utilization"
+                         << "cpu.utilization_timestamp"
                          << "function";
+
 
          header.writeToFile(CSV_FILENAME);
       }
@@ -365,35 +377,47 @@ struct rentbw_tester : eosio_system_tester
          ilog("before_reserve.cpu:                       ${x}", ("x", before_reserve.cpu));
          ilog("after_reserve.cpu:                        ${x}", ("x", after_reserve.cpu));
 
-         csv.newRow() << last_block_time() - timeOffset
+         csv.newRow() << last_block_time() - timeOffset            
                       << before_state.net.assumed_stake_weight
                       << before_state.net.weight_ratio / double(rentbw_frac)
                       << before_state.net.weight
-                      << before_receiver.net
-                      << after_receiver.net
-                      << after_receiver.net - before_receiver.net
-                      << before_payer.liquid - after_payer.liquid
-                      << before_reserve.net
-                      << after_reserve.net
-                      << before_reserve.cpu
-                      << after_reserve.cpu
-
-                      << get_state().cpu.weight
-                      << get_state().cpu.weight_ratio
-                      << get_state().cpu.assumed_stake_weight
-                      << get_state().cpu.initial_weight_ratio
-                      << get_state().cpu.target_weight_ratio
-                      << get_state().cpu.initial_timestamp.sec_since_epoch()
-                      << get_state().cpu.target_timestamp.sec_since_epoch()
-                      << get_state().cpu.exponent
-                      << get_state().cpu.decay_secs
-                      << get_state().cpu.min_price.to_string()
-                      << get_state().cpu.max_price.to_string()
-                      << get_state().cpu.utilization
-                      << get_state().cpu.adjusted_utilization
-                      << get_state().cpu.utilization_timestamp.sec_since_epoch()
-                      << get_state().cpu.fee
-                      
+                      << float(before_reserve.net / 10000.0)
+                      << float(after_reserve.net / 10000.0)
+                      << float(before_reserve.cpu / 10000.0)
+                      << float(after_reserve.cpu / 10000.0)
+                      << net_frac
+                      << float((after_receiver.net - before_receiver.net) / 10000.0)
+                      << cpu_frac
+                      << float((after_receiver.cpu - before_receiver.cpu) / 10000.0)
+                      << float((before_payer.liquid - after_payer.liquid).get_amount() / 10000.0) 
+                      << after_state.net.weight
+                      << after_state.net.weight_ratio
+                      << after_state.net.assumed_stake_weight
+                      << after_state.net.initial_weight_ratio
+                      << after_state.net.target_weight_ratio
+                      << after_state.net.initial_timestamp.sec_since_epoch()
+                      << after_state.net.target_timestamp.sec_since_epoch()
+                      << after_state.net.exponent
+                      << after_state.net.decay_secs
+                      << after_state.net.min_price.to_string()
+                      << after_state.net.max_price.to_string()
+                      << after_state.net.utilization
+                      << after_state.net.adjusted_utilization
+                      << after_state.net.utilization_timestamp.sec_since_epoch()
+                      << after_state.cpu.weight
+                      << after_state.cpu.weight_ratio
+                      << after_state.cpu.assumed_stake_weight
+                      << after_state.cpu.initial_weight_ratio
+                      << after_state.cpu.target_weight_ratio
+                      << after_state.cpu.initial_timestamp.sec_since_epoch()
+                      << after_state.cpu.target_timestamp.sec_since_epoch()
+                      << after_state.cpu.exponent
+                      << after_state.cpu.decay_secs
+                      << after_state.cpu.min_price.to_string()
+                      << after_state.cpu.max_price.to_string()
+                      << after_state.cpu.utilization
+                      << after_state.cpu.adjusted_utilization
+                      << after_state.cpu.utilization_timestamp.sec_since_epoch()
                       << (max > 0 ? "rentbwexec" : "rentbw");
       }
 

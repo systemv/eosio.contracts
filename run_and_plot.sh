@@ -7,7 +7,7 @@ fi
 cp $1 _model_config.json
 cp $2 _rentbw_input.csv
 
-build/tests/unit_test
+build/tests/unit_test -t eosio_system_rentbw_tests/model_tests
 
 cp model_tests.csv $3 
 
