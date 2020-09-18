@@ -239,7 +239,8 @@ struct rentbw_tester : eosio_system_tester
       config.net.current_weight_ratio = v.get("net").get("current_weight_ratio").get<int64_t>();
       config.net.target_weight_ratio = v.get("net").get("target_weight_ratio").get<int64_t>();
       config.net.assumed_stake_weight = v.get("net").get("assumed_stake_weight").get<int64_t>();
-      config.net.target_timestamp = control->head_block_time() + fc::days(v.get("net").get("target_timestamp").get<int64_t>());
+      // config.net.target_timestamp = control->head_block_time() + fc::days(v.get("net").get("target_timestamp").get<int64_t>());
+      config.net.target_timestamp = fc::time_point::from_iso_string(v.get("net").get("target_timestamp").get<string>());
       config.net.exponent = v.get("net").get("exponent").get<int64_t>();
       config.net.decay_secs = v.get("net").get("decay_secs").get<int64_t>();
       config.net.min_price = asset::from_string(v.get("net").get("min_price").get<string>());
@@ -248,7 +249,8 @@ struct rentbw_tester : eosio_system_tester
       config.cpu.target_weight_ratio = v.get("cpu").get("target_weight_ratio").get<int64_t>();
       
       config.cpu.assumed_stake_weight = v.get("cpu").get("assumed_stake_weight").get<int64_t>();
-      config.cpu.target_timestamp = control->head_block_time() + fc::days(v.get("cpu").get("target_timestamp").get<int64_t>());
+      config.cpu.target_timestamp = fc::time_point::from_iso_string(v.get("cpu").get("target_timestamp").get<string>());
+      // config.cpu.target_timestamp = control->head_block_time() + fc::days(v.get("cpu").get("target_timestamp").get<int64_t>());
       config.cpu.exponent = v.get("cpu").get("exponent").get<int64_t>();
       config.cpu.decay_secs = v.get("cpu").get("decay_secs").get<int64_t>();
       config.cpu.min_price = asset::from_string(v.get("cpu").get("min_price").get<string>());
@@ -432,30 +434,31 @@ struct rentbw_tester : eosio_system_tester
 
    void produce_blocks_date(const char *str)
    {
-      static std::chrono::system_clock::time_point cursor = std::chrono::system_clock::from_time_t(last_block_time());
-
-      // reading csv time
-      std::tm tm = {};
-      ::strptime(str, "%m/%d/%Y %H:%M:%S", &tm);
-      time_t  ttp = std::mktime(&tm);
+      // static std::chrono::system_clock::time_point cursor = std::chrono::system_clock::from_time_t(last_block_time());
+      
+      // // reading csv time
+      // std::tm tm = {};
+      // ::strptime(str, "%m/%d/%Y %H:%M:%S", &tm);
+      // time_t  ttp = std::mktime(&tm);
          
-      auto utc_field = *std::gmtime(&ttp);
-      time_t  ttpc = std::mktime(&utc_field);
-      time_t  timezone = ttpc - ttp;
+      // auto utc_field = *std::gmtime(&ttp);
+      // time_t  ttpc = std::mktime(&utc_field);
+      // time_t  timezone = ttpc - ttp;
 
-      // csv time in gmt
-      time_t  csvtime = ttp - timezone;
+      // // csv time in gmt
+      // time_t csvtime = ttp - timezone;
 
-      auto tp = std::chrono::system_clock::from_time_t(csvtime);
-      auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(tp - cursor).count();
+      // auto tp = std::chrono::system_clock::from_time_t(csvtime);
+      // auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(tp - cursor).count();
 
-      cout << "Time difference: " << std::chrono::system_clock::to_time_t(cursor) << " -- " << std::chrono::system_clock::to_time_t(tp) << std::endl;
+      // 
 
-      cursor = tp;
-    
+      // cursor = tp;
+      auto time_diff = fc::time_point::from_iso_string(str).sec_since_epoch() - last_block_time();
+      cout << "Time difference: " << time_diff << std::endl;
       if (time_diff > 500)
       {
-         produce_block(fc::milliseconds(time_diff) - fc::milliseconds(500));
+         produce_block(fc::seconds(time_diff) - fc::milliseconds(500));
       }     
    }
 };
