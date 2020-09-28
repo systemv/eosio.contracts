@@ -88,6 +88,9 @@ void system_contract::process_rentbw_queue(time_point_sec now, symbol core_symbo
 }
 
 void update_weight(time_point_sec now, rentbw_state_resource& res, int64_t& delta_available) {
+   eosio::print("::: now.utc_seconds ", now.utc_seconds, "\n");
+   eosio::print("::: res.initial_timestamp.utc_seconds ", res.initial_timestamp.utc_seconds, "\n");
+
    if (now >= res.target_timestamp) {
       res.weight_ratio = res.target_weight_ratio;
    } else {
@@ -361,7 +364,6 @@ void system_contract::rentbw(const name& payer, const name& receiver, uint32_t d
       eosio::check(f > 0, "calculated fee is below minimum; try renting more");
       fee.amount += f;
       state.utilization += amount;      
-      state.fee = f;
    };
 
    int64_t net_amount = 0;

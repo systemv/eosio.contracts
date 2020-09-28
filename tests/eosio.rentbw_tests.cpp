@@ -239,7 +239,8 @@ struct rentbw_tester : eosio_system_tester
       config.net.current_weight_ratio = v.get("net").get("current_weight_ratio").get<int64_t>();
       config.net.target_weight_ratio = v.get("net").get("target_weight_ratio").get<int64_t>();
       config.net.assumed_stake_weight = v.get("net").get("assumed_stake_weight").get<int64_t>();
-      config.net.target_timestamp = control->head_block_time() + fc::days(v.get("net").get("target_timestamp").get<int64_t>());
+      // config.net.target_timestamp = control->head_block_time() + fc::days(v.get("net").get("target_timestamp").get<int64_t>());
+      config.net.target_timestamp = fc::time_point::from_iso_string(v.get("net").get("target_timestamp").get<string>());
       config.net.exponent = v.get("net").get("exponent").get<int64_t>();
       config.net.decay_secs = v.get("net").get("decay_secs").get<int64_t>();
       config.net.min_price = asset::from_string(v.get("net").get("min_price").get<string>());
@@ -248,7 +249,8 @@ struct rentbw_tester : eosio_system_tester
       config.cpu.target_weight_ratio = v.get("cpu").get("target_weight_ratio").get<int64_t>();
       
       config.cpu.assumed_stake_weight = v.get("cpu").get("assumed_stake_weight").get<int64_t>();
-      config.cpu.target_timestamp = control->head_block_time() + fc::days(v.get("cpu").get("target_timestamp").get<int64_t>());
+      config.cpu.target_timestamp = fc::time_point::from_iso_string(v.get("cpu").get("target_timestamp").get<string>());
+      // config.cpu.target_timestamp = control->head_block_time() + fc::days(v.get("cpu").get("target_timestamp").get<int64_t>());
       config.cpu.exponent = v.get("cpu").get("exponent").get<int64_t>();
       config.cpu.decay_secs = v.get("cpu").get("decay_secs").get<int64_t>();
       config.cpu.min_price = asset::from_string(v.get("cpu").get("min_price").get<string>());
@@ -377,7 +379,7 @@ struct rentbw_tester : eosio_system_tester
          ilog("before_reserve.cpu:                       ${x}", ("x", before_reserve.cpu));
          ilog("after_reserve.cpu:                        ${x}", ("x", after_reserve.cpu));
 
-         csv.newRow() << last_block_time() - timeOffset            
+         csv.newRow() << last_block_time()           
                       << before_state.net.assumed_stake_weight
                       << before_state.net.weight_ratio / double(rentbw_frac)
                       << before_state.net.weight
@@ -430,42 +432,34 @@ struct rentbw_tester : eosio_system_tester
       }
    }
 
-   void produce_blocks_date(const char *str, std::string function)
+   void produce_blocks_date(const char *str)
    {
-      static std::chrono::system_clock::time_point cursor = std::chrono::system_clock::from_time_t(last_block_time());
-
-
-      std::tm tm = {};
-      ::strptime(str, "%m/%d/%Y %H:%M:%S", &tm);
-      time_t  ttp = std::mktime(&tm);
+      // static std::chrono::system_clock::time_point cursor = std::chrono::system_clock::from_time_t(last_block_time());
+      
+      // // reading csv time
+      // std::tm tm = {};
+      // ::strptime(str, "%m/%d/%Y %H:%M:%S", &tm);
+      // time_t  ttp = std::mktime(&tm);
          
-      auto utc_field = *std::gmtime(&ttp);
-      time_t  ttpc = std::mktime(&utc_field);
-      time_t  timezone = ttpc - ttp;
+      // auto utc_field = *std::gmtime(&ttp);
+      // time_t  ttpc = std::mktime(&utc_field);
+      // time_t  timezone = ttpc - ttp;
 
-      // csv time in gmt
-      time_t  csvtime = ttp - timezone;
+      // // csv time in gmt
+      // time_t csvtime = ttp - timezone;
 
-      // if first run - calculate offset
-      if (timeOffset == 0) {
-         timeOffset = last_block_time() - csvtime; // account for blocktime
-         cursor     = std::chrono::system_clock::from_time_t(last_block_time() - timeOffset);
-      } 
+      // auto tp = std::chrono::system_clock::from_time_t(csvtime);
+      // auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(tp - cursor).count();
 
-      auto tp = std::chrono::system_clock::from_time_t(ttp - timezone);
-      auto time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(tp - cursor).count();
+      // 
 
-      //cout << "Time difference: " << std::chrono::system_clock::to_time_t(cursor) << " -- " << std::chrono::system_clock::to_time_t(tp);
-
-      cursor = tp;
-    
+      // cursor = tp;
+      auto time_diff = fc::time_point::from_iso_string(str).sec_since_epoch() - last_block_time();
+      cout << "Time difference: " << time_diff << std::endl;
       if (time_diff > 500)
       {
-         produce_block(fc::milliseconds(time_diff) - fc::milliseconds(500));
-      }
-      else if (function == "rentbw") {
-         produce_block();
-      }      
+         produce_block(fc::seconds(time_diff) - fc::milliseconds(500));
+      }     
    }
 };
 
@@ -484,37 +478,22 @@ BOOST_FIXTURE_TEST_CASE(model_tests, rentbw_tester)
 try
 {
    produce_block();
-
-   BOOST_REQUIRE_EQUAL("", configbw(make_config_from_file(CFG_FILENAME, [&](auto &config) {
-
-                       })));
-
-   auto net_weight = stake_weight;
-   auto cpu_weight = stake_weight;
-
-   start_rex();
-   create_account_with_resources(N(aaaaaaaaaaaa), config::system_account_name, core_sym::from_string("1.0000"),
-                                 false, core_sym::from_string("500.0000"), core_sym::from_string("500.0000"));
-
-   transfer(config::system_account_name, N(aaaaaaaaaaaa), core_sym::from_string("5000000.0000"));
+   start_rex();   
 
    io::CSVReader<9> in(INP_FILENAME);
    in.read_header(io::ignore_extra_column, "datetime", "function", "payer", "receiver", "days", "net_frac", "cpu_frac", "max_payment", "queue_max");
 
    std::string datetime, function, payer, receiver;
-   uint32_t days;
-   int64_t net_frac, cpu_frac;
+   uint32_t    days;
+   int64_t     net_frac, cpu_frac;
    std::string max_payment;
-   uint16_t queue_max;
-
-   std::chrono::system_clock::time_point cursor;
-   bool first_timepoint = true;
+   uint16_t    queue_max;
 
    while (in.read_row(datetime, function, payer, receiver, days, net_frac, cpu_frac, max_payment, queue_max))
    {
       if (function == "rentbwexec" || function == "rentbw")
       {
-         produce_blocks_date(datetime.c_str(), function);
+         produce_blocks_date(datetime.c_str());
 
          account_name payer_name = string_to_name(payer);
          account_name receiver_name = string_to_name(receiver);
@@ -522,11 +501,19 @@ try
          check_rentbw(payer_name, receiver_name,
                       days, net_frac, cpu_frac, asset::from_string(max_payment + " TST"), 0, 0, function == "rentbwexec" ? queue_max : 0);
       }
-      else
+      else if (function == "configrentbw")
       {
-         //
+         produce_blocks_date(datetime.c_str());
+
+         create_account_with_resources(N(aaaaaaaaaaaa), config::system_account_name, core_sym::from_string("1.0000"),
+                                 false, core_sym::from_string("500.0000"), core_sym::from_string("500.0000"));
+         transfer(config::system_account_name, N(aaaaaaaaaaaa), core_sym::from_string("5000000.0000"));         
+         
+         configbw(make_config_from_file(CFG_FILENAME, [&](auto &config) {}));
       }
-      
+      else {
+          ilog("Unexpected input function, skipping. Please check your input csv file");       
+      }
    }
 }
 FC_LOG_AND_RETHROW()
